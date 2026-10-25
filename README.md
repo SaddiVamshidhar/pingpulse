@@ -5,7 +5,11 @@ records their availability and response time, and shows live status on a dashboa
 status page. It is built with **Node.js, Express, React, MongoDB, Nginx, Docker Compose** and
 uses **GitHub Actions** for continuous integration.
 
+![Dashboard](docs/dashboard.png)
+
 ## Architecture
+
+![Architecture](docs/architecture.png)
 
 ```
             Browser
@@ -47,6 +51,10 @@ docker compose stop demo-site     # dashboard turns red within ~10 s
 docker compose logs -f worker     # see the [ALERT] line
 docker compose start demo-site    # monitor recovers
 ```
+
+| Monitor detail | Status page |
+|---|---|
+| ![Detail](docs/detail.png) | ![Status page](docs/status_page.png) |
 
 ## REST API
 
