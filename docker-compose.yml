@@ -1,0 +1,82 @@
+name: pingpulse
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: pingpulse-mongo
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: ./server
+    image: pingpulse-api:latest
+    container_name: pingpulse-api
+    restart: unless-stopped
+    environment:
+      PORT: 5000
+      MONGO_URI: mongodb://mongo:27017/pingpulse
+      SEED_DEMO: "true"
+    ports:
+      - "5000:5000"
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - backend
+      - frontend
+
+  worker:
+    build: ./worker
+    image: pingpulse-worker:latest
+    container_name: pingpulse-worker
+    restart: unless-stopped
+    environment:
+      MONGO_URI: mongodb://mongo:27017/pingpulse
+      TICK_MS: 5000
+      REQUEST_TIMEOUT_MS: 10000
+    depends_on:
+      mongo:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    networks:
+      - backend
+      - frontend
+
+  web:
+    build: ./client
+    image: pingpulse-web:latest
+    container_name: pingpulse-web
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - frontend
+
+  # A tiny website used for the live demo: run `docker compose stop demo-site`
+  # and watch the dashboard turn red, then `docker compose start demo-site`.
+  demo-site:
+    image: nginx:1.27-alpine
+    container_name: pingpulse-demo-site
+    volumes:
+      - ./demo-site:/usr/share/nginx/html:ro
+    networks:
+      - frontend
+
+networks:
+  backend:
+  frontend:
+
+volumes:
+  mongo-data:
